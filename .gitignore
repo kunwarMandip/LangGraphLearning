@@ -4,3 +4,4 @@ PROJECT.md
 /.idea
 /logs
 try.ipynb
+.env
