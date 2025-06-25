@@ -1,0 +1,6 @@
+*.pyc
+/venv
+PROJECT.md
+/.idea
+/logs
+try.ipynb
