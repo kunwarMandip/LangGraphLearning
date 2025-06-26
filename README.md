@@ -26,5 +26,6 @@ pip install -r requirements.txt
 ```
 
 ## Running the Application
-
-
+```bash
+python -m app.chatbot
+```

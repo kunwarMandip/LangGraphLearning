@@ -1,4 +1,3 @@
-langchain
 langgraph
 langsmith
-IPython
+langchain-openai
