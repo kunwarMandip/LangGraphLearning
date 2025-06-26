@@ -29,5 +29,6 @@ pip install -r requirements.txt
 ```bash
 python -m app.static_response
 python -m app.chatbot
-
+python -m app.weather_static
+python -m app.weather_tool
 ```
