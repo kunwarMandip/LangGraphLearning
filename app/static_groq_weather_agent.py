@@ -18,6 +18,9 @@ agent = create_react_agent(
     prompt = "You are a helpful assistant"
 )
 
-agent.invoke(
+results = agent.invoke(
     {"messages": [{"role": "user", "content": "What is the weather in london?"}]}
 )
+
+print (results)
+

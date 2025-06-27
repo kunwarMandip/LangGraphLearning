@@ -32,4 +32,6 @@ python -m app.chatbot
 python -m app.weather_static
 python -m app.weather_tool
 python -m app.weather_agent
+python -m app.static_groq_weather_agent
+python -m app.dynamic_groq_weather_agent
 ```
