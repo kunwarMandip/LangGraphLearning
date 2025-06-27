@@ -31,4 +31,5 @@ python -m app.static_response
 python -m app.chatbot
 python -m app.weather_static
 python -m app.weather_tool
+python -m app.weather_agent
 ```
