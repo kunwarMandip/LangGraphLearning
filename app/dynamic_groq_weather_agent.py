@@ -36,3 +36,4 @@ results =  agent.invoke(
 )
 
 print (results)
+print(results["messages"][-1].content)
