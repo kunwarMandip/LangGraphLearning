@@ -35,4 +35,10 @@ python -m app.weather_agent
 python -m app.static_groq_weather_agent
 python -m app.dynamic_groq_weather_agent
 python -m app.memory_saver
+
+#########################
+
+
+python -m app.task_1.main
 ```
+

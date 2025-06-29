@@ -12,6 +12,7 @@ load_dotenv()
 
 os.environ["OPENAI_API_KEY"] = os.getenv("OPEN_API_KEY")
 llm = init_chat_model("openai:gpt-3.5-turbo")
+
 class State(TypedDict):
     messages: Annotated[list, add_messages]
 
