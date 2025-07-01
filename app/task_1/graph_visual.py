@@ -1,8 +1,23 @@
 from IPython.display import Image, display
-from app.task_1.graph_visual import graph_builder as graph
+from app.task_1.graph import step_1
 
+import webbrowser
+webbrowser.open("graph.png")
+
+from IPython.display import Image, display
+
+
+graph = step_1()
 try:
-    display(Image(graph.get_graph().draw_mermaid_png()))
-except Exception:
-    # This requires some extra dependencies and is optional
-    pass
+    # Save to file
+    with open("graph.png", "wb") as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+
+    print("Graph saved to graph.png")
+
+    # Optionally open it (Windows only)
+    import webbrowser
+    webbrowser.open("graph.png")
+
+except Exception as e:
+    print(f"Error generating graph: {e}")

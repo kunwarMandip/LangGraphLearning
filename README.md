@@ -38,7 +38,7 @@ python -m app.memory_saver
 
 #########################
 
-
 python -m app.task_1.main
+python -m app.task_1.graph_visual
 ```
 

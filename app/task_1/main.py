@@ -30,11 +30,11 @@ input_3 = {
 
 graph = step_1()
 
-results = graph.invoke(input_1, config= config)
-print(results)
-
 results = graph.invoke(input_2, config= config)
 print(results)
 
-results = graph.invoke(input_3, config= config)
-print(results)
+# results = graph.invoke(input_2, config= config)
+# print(results)
+
+# results = graph.invoke(input_3, config= config)
+# print(results)
