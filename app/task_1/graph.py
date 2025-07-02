@@ -3,7 +3,7 @@ from app.task_1.llm_info import llm
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
 
-from app.task_1.states import MyState, SubDivideTask
+from app.task_1.states import MyState
 
 def chatbot(state: MyState):
     system_msg = {

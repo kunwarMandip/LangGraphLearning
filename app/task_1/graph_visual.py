@@ -1,13 +1,9 @@
 from IPython.display import Image, display
-from app.task_1.graph import step_1
-
-import webbrowser
-webbrowser.open("graph.png")
-
-from IPython.display import Image, display
+from app.task_1.graph_2 import first_graph
 
 
-graph = step_1()
+
+graph = first_graph()
 try:
     # Save to file
     with open("graph.png", "wb") as f:
@@ -16,8 +12,6 @@ try:
     print("Graph saved to graph.png")
 
     # Optionally open it (Windows only)
-    import webbrowser
-    webbrowser.open("graph.png")
 
 except Exception as e:
     print(f"Error generating graph: {e}")

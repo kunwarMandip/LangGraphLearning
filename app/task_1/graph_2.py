@@ -1,55 +1,87 @@
 from app.task_1.llm_info import llm
-
+from app.task_1.states import MyState
 from langgraph.graph import StateGraph, START, END
 from langgraph.checkpoint.memory import MemorySaver
+from langchain_core.prompts import ChatPromptTemplate
 
-def identify_query(state):
-    return "starting chatbot"
+SYSTEM_PROMPT = ChatPromptTemplate.from_messages([
+    ("system",
+     "You are a project timeline manager."
+     "Identify the task given by "
+     "Break the task \"{task}\" into an Eisenhower matrix.")
+])
 
-def add_task(state):
-    return "adding a new task"
+def identify_query(state: MyState):
+    return True
 
-def identify_sub_task():
-    return "create a list of sub tasks dependant on task"
+def should_end(state: MyState):
+    return False
 
-def add_sub_tasks():
-    return "creating sub_tasks"
+def identify_task(state: MyState):
+    return "identify tasks"
 
-def update_task(state):
-    return "updating a current task"
+def identify_subtasks(state: MyState):
+    return "identify subtasks"
 
-def update_sub_task(state):
-    return "updating a task sub task"
-
-def verify_tasks():
+def verify_task(state: MyState):
     return "verifying tasks"
 
+def verify_subtasks(state: MyState):
+    return "verifying sub tasks"
 
-memory = MemorySaver()
-graph_builder = StateGraph()
+def verify_both(state: MyState):
+    return "verifying both"
 
-#Create nodes
-graph_builder.add_node("identify_query", identify_query)
-graph_builder.add_node("add_tasks", add_task)
-graph_builder.add_node("identify_sub_tasks", identify_sub_task)
-graph_builder.add_node("add_sub_tasks", add_sub_tasks)
-graph_builder.add_node("update_tasks", update_task)
-graph_builder.add_node("update_sub_task", update_sub_task)
-graph_builder.add_node("verify_tasks", verify_tasks)
+def add_task(state: MyState):
+    return "adding tasks"
+    
+def add_subtasks(state: MyState):
+    return "adding sub_tasks"
 
-#Set START and END edge
-graph_builder.add_edge(START, "identify_query")
-graph_builder.add_edge("verify_tasks", END)
-
-#Create conditional edges
-
-graph_builder.a(identify_query, )
-graph_builder.add_edge()
-graph_builder.add_edge()
-graph_builder.add_edge()
-graph_builder.add_edge()
+def get_query(state: MyState):
+    return "query on that day"
 
 
-graph_builder.add
+def first_graph():
+    memory = MemorySaver()
+    graph_builder = StateGraph(MyState)
+    #Create nodes
+    graph_builder.add_node("identify_query", identify_query)
+    graph_builder.add_node("identify_task", identify_task)
+    graph_builder.add_node("identify_subtasks", identify_subtasks)
+    graph_builder.add_node("verify_task", verify_task)
+    graph_builder.add_node("verify_subtasks", verify_subtasks)
+    graph_builder.add_node("verify_both", verify_both)
+    graph_builder.add_node("add_task", add_task)
+    graph_builder.add_node("add_subtasks", add_subtasks)
+    graph_builder.add_node("get_query", get_query)
 
-graph = graph_builder.compile(checkpointer=memory)
+    #Set START and END edge
+    graph_builder.add_edge(START, "identify_query")
+    graph_builder.add_edge("verify_both", END)
+    graph_builder.add_edge("get_query", END)
+
+    #Create conditional edges
+    graph_builder.add_conditional_edges(
+        "identify_query",
+        should_end,
+        {
+            True: "identify_task",
+            False: "get_query"              
+        }
+    )
+
+    
+    #Mandatory edge checks direction
+    graph_builder.add_edge("identify_task", "verify_task")
+    graph_builder.add_edge("verify_task", "add_task")
+    graph_builder.add_edge("add_task", "identify_subtasks")
+    graph_builder.add_edge("identify_subtasks", "verify_subtasks")
+    graph_builder.add_edge("verify_subtasks", "add_subtasks")
+    graph_builder.add_edge("add_subtasks", "verify_both")
+
+    graph = graph_builder.compile(checkpointer=memory)
+
+    return graph 
+
+
