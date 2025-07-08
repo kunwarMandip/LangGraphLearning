@@ -1,5 +1,6 @@
 from app.task_1.llm_info import llm
 from app.task_1.graph import step_1
+from app.task_1.graph_2 import first_graph
 
 
 config = {
@@ -17,7 +18,7 @@ input_1 = {
 
 input_2 = {
     "messages": [
-        {"role": "user", "content": "What is a dog?"}
+        {"role": "user", "content": "Set me a time to play football for 2pm tomorrow"}
     ]
 }
 
@@ -28,10 +29,11 @@ input_3 = {
     ]
 }
 
-graph = step_1()
+graph = first_graph()
 
 results = graph.invoke(input_2, config= config)
 print(results)
+# print(results)
 
 # results = graph.invoke(input_2, config= config)
 # print(results)

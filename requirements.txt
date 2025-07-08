@@ -3,4 +3,4 @@ langsmith
 langchain-openai
 langchain-anthropic
 langchain_groq
-IPython     
+IPython          
