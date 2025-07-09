@@ -7,28 +7,29 @@ from langgraph.graph import StateGraph, START, END
 
 from app.llm_info import llm
 
-#python -m app.langgraph_advanced.task_1.graph
 
 class State(TypedDict):
     logs: List[str]
     order: str
+    messages: Annotated[list, add_messages]
+
+
+retry_policy = RetryPolicy()
 
 
 def process_food(state: State):
     
     logs = state.get("logs", [])
     
-    if random.random() < 0.7:
-        print("failing")
+    if random.random() > 0.1:
+        print("Failed")
         raise Exception("Simulated Failure")
 
     logs.append("Food processed")
     state["logs"] = logs
-
-    return {
-        "logs": logs, 
-        "state": "pizza"
-    }
+    state["order"] = "pizza"
+    
+    return state
 
 
 graph_builder = StateGraph(State)
@@ -37,16 +38,12 @@ graph_builder.add_edge(START, "process_food")
 graph_builder.add_edge("process_food", END)
 graph = graph_builder.compile()
 
-print("Graph created successfully")
-print(graph)
-
-
-initial_state = {"logs": [], "order": ""}
-
 try:
+    # Initialize the state properly
+    initial_state = {"logs": [], "order": "", "messages": []}
     results = graph.invoke(initial_state)
     print("Order:", results["order"])
     print("Logs:", results["logs"])
 except Exception as e:
     print(f"Error occurred: {e}")
-    print("This might be due to the simulated failures or missing dependencies")
+    print("Simulated Failure")
