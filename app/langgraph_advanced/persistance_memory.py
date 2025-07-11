@@ -6,6 +6,7 @@ from typing import Annotated, TypedDict, List
 
 from langchain_core.tools import tool
 from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import HumanMessage, AIMessage
 from langgraph.graph.message import add_messages
 from langgraph.graph import StateGraph, START, END
 from langgraph.prebuilt import ToolNode, tools_condition
@@ -17,6 +18,7 @@ filename = "app\\langgraph_advanced\\data.json"
 class State(TypedDict):
     latest_user_query: str
     messages: Annotated[List, add_messages]
+    tool_called: bool  # Track if tool was called
 
 
 class UserData(BaseModel):
@@ -35,9 +37,6 @@ def load_existing_data():
     
 def save_data_to_file(data):
     """Helper function to save data to file"""
-    # Ensure directory exists
-    # os.makedirs(os.path.dirname(filename), exist_ok=True)
-    
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
         
@@ -49,7 +48,7 @@ def save_user_data(user_data: UserData):
     # Load existing data
     existing_data = load_existing_data()
     
-    # Update with new data
+    # Update with new data (avoid duplicates)
     if user_data.user_name:
         print(f"Saving name: {user_data.user_name}")
         existing_data['user_name'] = user_data.user_name
@@ -58,13 +57,19 @@ def save_user_data(user_data: UserData):
         print(f"Saving order details: {user_data.order_details}")
         if 'order_details' not in existing_data:
             existing_data['order_details'] = []
-        existing_data['order_details'].extend(user_data.order_details)
+        # Only add if not already present
+        for detail in user_data.order_details:
+            if detail not in existing_data['order_details']:
+                existing_data['order_details'].append(detail)
     
     if user_data.user_details:
         print(f"Saving user details: {user_data.user_details}")
         if 'user_details' not in existing_data:
             existing_data['user_details'] = []
-        existing_data['user_details'].extend(user_data.user_details)
+        # Only add if not already present
+        for detail in user_data.user_details:
+            if detail not in existing_data['user_details']:
+                existing_data['user_details'].append(detail)
     
     # Actually save to file
     save_data_to_file(existing_data)
@@ -79,10 +84,10 @@ def get_user_data() -> str:
         with open(filename, "r") as f:
             data = json.load(f)
             print(data)
-            return data
+            return json.dumps(data)
     except(FileNotFoundError):
         print("File not Found")
-        return {}
+        return "{}"
 
 
 tools = [save_user_data, get_user_data]
@@ -98,7 +103,14 @@ def create_prompt(input: str):
             """
             You are a friendly restaurant diner assistant.
             Your task is to take user order details and answer any questions the user may have about their orders.
-            DO NOT store any data that the user has not explicitly given.
+            
+            IMPORTANT RULES:
+            1. DO NOT store any data that the user has not explicitly given for restaurant orders.
+            2. Only save restaurant-related information (food orders, drinks, etc.)
+            3. Do NOT save non-restaurant activities like sports, appointments, or general scheduling.
+            4. If the user asks about non-restaurant activities, politely redirect them to restaurant services.
+            5. Only call save_user_data when the user provides NEW restaurant order information.
+            6. Do not repeatedly save the same information.
             
             Below is the data you currently have about the user:
             <User details:
@@ -106,11 +118,8 @@ def create_prompt(input: str):
             >
             
             You should ONLY store these details about the user:
-                - name 
-                - Order Details
-                
-            Important: Only call save_user_data when the user provides new information that needs to be stored.
-            Do not repeatedly try to save the same information.
+                - name (only if related to restaurant orders)
+                - Restaurant Order Details (food, drinks, table reservations)
             """
         ),
         ("human", "{user_input}")
@@ -121,37 +130,98 @@ def create_prompt(input: str):
 def chatbot(state: State):
     print("On node: chatbot")
     user_query = state["messages"][-1].content
-    print(user_query)
+    print(f"Processing: {user_query}")
+    
+    # Skip processing if this is a tool response
+    if isinstance(state["messages"][-1], AIMessage) and "Data saved successfully" in user_query:
+        print("Skipping tool response message")
+        return {"messages": []}
+    
     prompt = create_prompt(user_query)
-    print(prompt)
+    print(f"Prompt created: {len(prompt)} messages")
     results = llm_with_tools.invoke(prompt)
     return {
-        "messages": results
+        "messages": [results],
+        "tool_called": bool(results.tool_calls) if hasattr(results, 'tool_calls') else False
     }
 
+def should_continue(state: State):
+    """Determine if we should continue to tools or end"""
+    last_message = state["messages"][-1]
+    
+    # If the last message has tool calls, go to tools
+    if hasattr(last_message, 'tool_calls') and last_message.tool_calls:
+        return "tools"
+    else:
+        return "end"
+
+def handle_tool_response(state: State):
+    """Handle tool responses and prevent infinite loops"""
+    print("Tool execution completed")
+    return {"tool_called": False}
 
 graph_builder = StateGraph(State)
 
-#Specifying Nodes
+# Specifying Nodes
 graph_builder.add_node("chatbot", chatbot)
-tool_node = ToolNode(tools= tools)
+tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
 
+# Modified edges to prevent infinite loops
 graph_builder.add_conditional_edges(
     "chatbot",
-    tools_condition,
+    should_continue,
+    {
+        "tools": "tools",
+        "end": END
+    }
 )
-graph_builder.add_edge("tools", "chatbot")
+
+# After tools, go directly to END instead of back to chatbot
+graph_builder.add_edge("tools", END)
 graph_builder.add_edge(START, "chatbot")
-graph_builder.add_edge("chatbot", END)
+
 graph = graph_builder.compile()
 
+# Test with restaurant order
+input_restaurant = {
+    "messages": [
+        {"role": "user", "content": "I'd like to order a pizza and a coke for table 5"}
+    ]
+}
 
-input_2 = {
+print("=== Testing with restaurant order ===")
+results = graph.invoke(input_restaurant)
+print("Final result:", results)
+
+print("\n" + "="*50 + "\n")
+
+# Test with non-restaurant request
+input_football = {
     "messages": [
         {"role": "user", "content": "Set me a time to play football for 2pm tomorrow"}
     ]
 }
 
-results = graph.invoke(input_2)
-print(results)
+print("=== Testing with football request ===")
+results = graph.invoke(input_football)
+print("Final result:", results)
+
+
+
+print("=== Testing with restaurant order ===")
+results = graph.invoke(input_restaurant)
+print("Final result:", results)
+
+print("\n" + "="*50 + "\n")
+
+# Test with non-restaurant request
+name = {
+    "messages": [
+        {"role": "user", "content": "What is my name"}
+    ]
+}
+
+print("=== Testing with football request ===")
+results = graph.invoke(name)
+print("Final result:", results)
