@@ -57,7 +57,8 @@ def save_user_data(user_data: UserData):
         print(f"Saving order details: {user_data.order_details}")
         if 'order_details' not in existing_data:
             existing_data['order_details'] = []
-        # Only add if not already present
+            
+        # Only adding data if not already present
         for detail in user_data.order_details:
             if detail not in existing_data['order_details']:
                 existing_data['order_details'].append(detail)
@@ -162,7 +163,7 @@ def handle_tool_response(state: State):
 
 graph_builder = StateGraph(State)
 
-# Specifying Nodes
+
 graph_builder.add_node("chatbot", chatbot)
 tool_node = ToolNode(tools=tools)
 graph_builder.add_node("tools", tool_node)
@@ -176,8 +177,6 @@ graph_builder.add_conditional_edges(
         "end": END
     }
 )
-
-# After tools, go directly to END instead of back to chatbot
 graph_builder.add_edge("tools", END)
 graph_builder.add_edge(START, "chatbot")
 
@@ -196,7 +195,6 @@ print("Final result:", results)
 
 print("\n" + "="*50 + "\n")
 
-# Test with non-restaurant request
 input_football = {
     "messages": [
         {"role": "user", "content": "Set me a time to play football for 2pm tomorrow"}
